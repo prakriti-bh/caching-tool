@@ -1,16 +1,16 @@
 const fs = require('fs-extra');
 const path = require('path');
+const config = require('./config');
 
 class Cache {
-  constructor(maxSize, policy, cacheDir) {
-    this.maxSize = maxSize; // Maximum number of items in cache
-    this.policy = policy; // Caching policy: 'FIFO', 'LRU', or 'LFU'
-    this.cacheDir = cacheDir; // Directory for cache storage
-    this.cache = new Map(); // Store the cache entries
-    this.usageCount = new Map(); // Store usage counts for LFU
-    this.order = []; // For FIFO
-
-    // Ensure cache directory exists
+    constructor(maxSize, policy, cacheDir) {
+        this.maxSize = maxSize || config.cache.maxSize;
+        this.policy = policy || config.cache.policy;
+        this.cacheDir = cacheDir || config.cache.cacheDir;
+        this.cache = new Map();
+        this.usageCount = new Map();
+        this.order = [];
+        
     fs.ensureDirSync(this.cacheDir);
   }
 
