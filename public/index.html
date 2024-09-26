@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Caching Analytics Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        h1 { margin-bottom: 30px; }
+        h2 { margin-top: 30px; }
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            width: 200px;
+            margin: 10px;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #3498db;
+        }
+        .stat-label {
+            font-size: 1em;
+            color: #7f8c8d;
+        }
+        .chart-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            gap: 20px;
+        }
+        .chart {
+            width: 45%;
+            height: 300px;
+            background-color: #f9fafc;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+        }
+        .last-updated {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        @media (max-width: 768px) {
+            .chart {
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Enhanced Caching Analytics Dashboard</h1>
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRequests">0</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="cacheHits">0</div>
+                <div class="stat-label">Cache Hits</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="cacheMisses">0</div>
+                <div class="stat-label">Cache Misses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="hitRate">0%</div>
+                <div class="stat-label">Hit Rate</div>
+            </div>
+        </div>
+        <h2>Cache Performance Overview</h2>
+        <div class="chart-container">
+            <canvas id="cacheChart" class="chart"></canvas>
+        </div>
+        <h2>Performance Trends</h2>
+        <div class="chart-container">
+            <canvas id="trendsChart" class="chart"></canvas>
+            <canvas id="hitRateChart" class="chart"></canvas>
+        </div>
+        <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+    <script>
+        let cacheChart, trendsChart, hitRateChart;
+        const maxDataPoints = 20;
+        const trendsData = {
+            labels: [],
+            totalRequests: [],
+            cacheHits: [],
+            cacheMisses: [],
+            hitRates: []
+        };
+
+        function updateDashboard(data) {
+            document.getElementById('totalRequests').textContent = data.totalRequests;
+            document.getElementById('cacheHits').textContent = data.cacheHits;
+            document.getElementById('cacheMisses').textContent = data.cacheMisses;
+            
+            const hitRate = data.totalRequests > 0 
+                ? ((data.cacheHits / data.totalRequests) * 100).toFixed(2) 
+                : 0;
+            document.getElementById('hitRate').textContent = hitRate + '%';
+
+            document.getElementById('lastUpdated').textContent = `Last Updated: ${new Date(data.lastUpdated).toLocaleString()}`;
+
+            updateCharts(data);
+        }
+
+        function updateCharts(data) {
+            updateCacheChart(data);
+            updateTrendsData(data);
+            updateTrendsChart();
+            updateHitRateChart();
+        }
+
+        function updateCacheChart(data) {
+            const ctx = document.getElementById('cacheChart').getContext('2d');
+            
+            if (cacheChart) {
+                cacheChart.destroy();
+            }
+
+            cacheChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cache Hits', 'Cache Misses'],
+                    datasets: [{
+                        data: [data.cacheHits, data.cacheMisses],
+                        backgroundColor: ['#2ecc71', '#e74c3c'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Cache Performance'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTrendsData(data) {
+            const now = new Date();
+            trendsData.labels.push(now.toLocaleTimeString());
+            trendsData.totalRequests.push(data.totalRequests);
+            trendsData.cacheHits.push(data.cacheHits);
+            trendsData.cacheMisses.push(data.cacheMisses);
+            trendsData.hitRates.push(((data.cacheHits / data.totalRequests) * 100).toFixed(2));
+
+            if (trendsData.labels.length > maxDataPoints) {
+                trendsData.labels.shift();
+                trendsData.totalRequests.shift();
+                trendsData.cacheHits.shift();
+                trendsData.cacheMisses.shift();
+                trendsData.hitRates.shift();
+            }
+        }
+
+        function updateTrendsChart() {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            
+            if (trendsChart) {
+                trendsChart.destroy();
+            }
+
+            trendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendsData.labels,
+                    datasets: [
+                        {
+                            label: 'Total Requests',
+                            data: trendsData.totalRequests,
+                            borderColor: '#3498db',
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Cache Hits',
+                            data: trendsData.cacheHits,
+                            borderColor: '#2ecc71',
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Cache Misses',
+                            data: trendsData.cacheMisses,
+                            borderColor: '#e74c3c',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Performance Trends'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateHitRateChart() {
+            const ctx = document.getElementById('hitRateChart').getContext('2d');
+            
+            if (hitRateChart) {
+                hitRateChart.destroy();
+            }
+
+            hitRateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendsData.labels,
+                    datasets: [
+                        {
+                            label: 'Hit Rate (%)',
+                            data: trendsData.hitRates,
+                            borderColor: '#f39c12',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Hit Rate Over Time'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Simulate real-time data update
+        function fetchAnalytics() {
+            fetch('/api/cache-analytics')
+                .then(response => response.json())
+                .then(data => {
+                    updateDashboard(data);
+                })
+                .catch(error => console.error('Error fetching analytics:', error));
+        }
+
+        // Initial fetch and set up interval for updates
+        fetchAnalytics();
+        setInterval(fetchAnalytics, 5000);
+    </script>
+</body>
+</html>

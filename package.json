@@ -1,0 +1,20 @@
+{
+	"name": "cachinggg3",
+	"version": "1.4.4",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"start": "node app.js",
+		"dev": "nodemon app.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"bootstrap": "^5.3.3",
+		"chart.js": "^4.4.4",
+		"express": "^4.21.0",
+		"node-cache": "^5.1.2",
+		"nodemon": "^3.1.7"
+	}
+}
